@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beaver IoT Dashboard - Live View</title>
+    <meta name="description" content="Live view of Beaver IoT Dashboard">
+    <meta http-equiv="refresh" content="30">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1920px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .logo {
+            font-size: 1.2em;
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .info-bar {
+            background: #f8f9fa;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.95em;
+            color: #555;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4caf50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status.offline .status-indicator {
+            background: #f44336;
+            animation: none;
+        }
+
+        .timestamp {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .refresh-info {
+            font-size: 0.85em;
+            color: #888;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dashboard-view {
+            position: relative;
+            width: 100%;
+            background: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 600px;
+        }
+
+        #dashboard-image {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #666;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        footer a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .subtitle {
+                font-size: 0.95em;
+            }
+
+            .info-bar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            header {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>
+                <span class="logo">🦫</span>
+                Beaver IoT Dashboard
+            </h1>
+            <div class="subtitle">Live View - Auto-refresh every 30 seconds</div>
+        </header>
+
+        <div class="info-bar">
+            <div class="status" id="status">
+                <div class="status-indicator"></div>
+                <span>Live</span>
+            </div>
+            <div class="timestamp">
+                Last updated: <strong id="last-update">Loading...</strong>
+            </div>
+            <div class="refresh-info">
+                🔄 Next refresh in <strong id="countdown">30</strong>s
+            </div>
+        </div>
+
+        <div class="error-message" id="error-message"></div>
+
+        <div class="dashboard-view">
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <div>Loading dashboard...</div>
+            </div>
+            <img id="dashboard-image" style="display: none;" alt="Dashboard View">
+        </div>
+
+        <footer>
+            <p>
+                <strong>Beaver IoT Cytron Edition</strong> | 
+                View-only public dashboard | 
+                <a href="https://github.com/Milesight-IoT/beaver-iot-docs" target="_blank">Documentation</a>
+            </p>
+            <p style="margin-top: 10px; font-size: 0.85em; color: #999;">
+                This is a read-only snapshot updated every 30 seconds. No data can be modified through this view.
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        let countdownInterval;
+        let countdown = 30;
+
+        async function loadMetadata() {
+            try {
+                const response = await fetch('metadata.json?t=' + Date.now());
+                const metadata = await response.json();
+                return metadata;
+            } catch (error) {
+                console.error('Error loading metadata:', error);
+                return null;
+            }
+        }
+
+        async function loadDashboard() {
+            const image = document.getElementById('dashboard-image');
+            const loading = document.getElementById('loading');
+            const statusDiv = document.getElementById('status');
+            const errorDiv = document.getElementById('error-message');
+
+            try {
+                // Load metadata
+                const metadata = await loadMetadata();
+                
+                if (metadata && metadata.success) {
+                    // Load image with cache busting
+                    image.src = 'dashboard-latest.png?t=' + Date.now();
+                    
+                    image.onload = function() {
+                        loading.style.display = 'none';
+                        image.style.display = 'block';
+                        statusDiv.classList.remove('offline');
+                        errorDiv.classList.remove('show');
+                    };
+
+                    image.onerror = function() {
+                        showError('Failed to load dashboard image');
+                    };
+
+                    // Update timestamp
+                    if (metadata.lastUpdate) {
+                        const date = new Date(metadata.lastUpdate);
+                        document.getElementById('last-update').textContent = date.toLocaleString();
+                    }
+                } else {
+                    showError(metadata?.error || 'Dashboard capture failed');
+                }
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                showError('Failed to load dashboard: ' + error.message);
+            }
+
+            // Reset countdown
+            resetCountdown();
+        }
+
+        function showError(message) {
+            const statusDiv = document.getElementById('status');
+            const errorDiv = document.getElementById('error-message');
+            const loading = document.getElementById('loading');
+
+            statusDiv.classList.add('offline');
+            statusDiv.querySelector('span').textContent = 'Offline';
+            errorDiv.textContent = '⚠️ ' + message;
+            errorDiv.classList.add('show');
+            loading.style.display = 'none';
+        }
+
+        function resetCountdown() {
+            countdown = 30;
+            updateCountdown();
+            
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+            
+            countdownInterval = setInterval(() => {
+                countdown--;
+                updateCountdown();
+                
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                }
+            }, 1000);
+        }
+
+        function updateCountdown() {
+            document.getElementById('countdown').textContent = countdown;
+        }
+
+        // Initial load
+        loadDashboard();
+
+        // Reload before meta refresh to update countdown
+        setInterval(() => {
+            if (countdown <= 1) {
+                loadDashboard();
+            }
+        }, 29000);
+    </script>
+</body>
+</html>
+
