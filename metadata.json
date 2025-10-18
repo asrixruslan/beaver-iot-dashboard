@@ -1,8 +1,8 @@
 {
-  "lastUpdate": "2025-10-18T22:24:07.772Z",
+  "lastUpdate": "2025-10-18T22:24:39.000Z",
   "success": true,
   "error": null,
-  "timestamp": 1760826247772,
+  "timestamp": 1760826279000,
   "config": {
     "url": "http://localhost",
     "viewport": {
